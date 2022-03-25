@@ -15,7 +15,8 @@ import todo.data.*
  *
  * You should modify this file.
  */
-object PersistentModel extends Model:
+object PersistentModel extends Model :
+
   import Codecs.given
 
   /** Path where the tasks are saved */
@@ -96,28 +97,44 @@ object PersistentModel extends Model:
    */
 
   def create(task: Task): Id =
-    ???
+    val tasks = loadTasks()
+    val id = loadId()
+    saveTasks(Tasks(tasks.toMap + (id -> task)))
+    saveId(id.next)
+    id
 
   def read(id: Id): Option[Task] =
-    ???
+    val tasks = loadTasks()
+    tasks.toMap.get(id)
 
   def update(id: Id)(f: Task => Task): Option[Task] =
-    ???
-
+    val tasks = loadTasks().toMap
+    val updatedTasks = tasks.map { (itemId, itemTask) =>
+      if itemId == id then
+        itemId -> f(itemTask)
+      else
+        itemId -> itemTask
+    }
+    saveTasks(Tasks(updatedTasks))
+    updatedTasks.get(id)
   def delete(id: Id): Boolean =
-    ???
+    val tasks = loadTasks().toMap
+    saveTasks(Tasks(tasks - id))
+    tasks.isDefinedAt(id)
 
   def tasks: Tasks =
-    ???
+    loadTasks()
 
   def tasks(tag: Tag): Tasks =
-    ???
+    val tasks = loadTasks().toMap
+    Tasks(tasks.filter((id, task) => task.tags.contains(tag)))
 
   def complete(id: Id): Option[Task] =
-    ???
+    update(id)(task => task.copy(state = State.completedNow))
 
   def tags: Tags =
-    ???
+    val tasks = loadTasks().toMap
+    Tags(tasks.flatMap((id, task) => task.tags).toList.distinct)
 
   def clear(): Unit =
-    ???
+    saveTasks(Tasks.empty)
